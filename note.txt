@@ -1,0 +1,72 @@
+TO DEPLOY SIMPLE PIPELINE USING JENKINSFILE AND ANSIBLE TO DEPLOY A DOCKER CONTAINER 
+STEP 1) GO TO GITHUB AND CREATE A NEW REPOSITORY
+        # create a folder named 'ansible'
+          inside ansible folder two files - (deploy.yml, hosts.ini)
+        
+	- create hosts.ini
+          [worker]
+	  localhost ansible_connection=local 
+          (commit changes)
+	
+	- create deploy.yml
+
+---
+- name: jenkins ansible deployment
+  hosts: all
+  become: true
+
+  tasks:
+    - name: docker container run
+      docker_container:
+        name: web
+        image: nginx:latest
+        tty: true
+        state: started
+        ports:
+          - "80:80"
+
+- NOW OUTSIDE ANSIBLE FOLDER IN GITHUB CREATE file named 'Jenkinsfile' for pipeline
+
+pipeline {
+  agent { label "${LABEL_NAME}" }
+
+  stages {
+    stage('CODE') {
+      steps {
+                git url:"https://github.com/netlitrain/ansiblejenkins.git", branch: "main"
+      }
+    }
+    
+    stage('ANSIBLE PLAYBOOK') {
+      steps {
+                ansiblePlaybook(
+                  playbook: 'ansible/deploy.yml',
+                  inventory: 'ansible/hosts.ini',
+                  credentialsId: '${SSH_KEY}'
+                )
+      }
+    }
+  }
+}
+
+
+STEP 2) INSTALL ANSIBLE PLUGIN ON MASTER MACHINE AND ENABLE IT THROUGH TOOLS
+
+
+STEP 3) GO TO THE AGENT NODE (EC2) INSTANCE AND INSTALL ANSIBLE
+        TAKE LOGIN THROUGH COMMAND LINE
+
+        #sudo add-apt-repository --yes --update ppa:ansible/ansible
+        # sudo apt update
+        # sudo apt install ansible
+
+STEP 4) GO TO THE JENKINS DASHBOARD AND CREATE A NEW JOB WITH ANY NAME.
+        - USE STRING PARAMETER AND CREDENTIAL PARAMETER 
+          - STRING PARAMETER FOR AGENT - LABEL_NAME = netligent (if used)
+          - CREDENTIAL PARAMETER FOR SSH KEY - SSH_KEY = ubuntukey
+
+- BUILD AND CHECK WHETHER BUILD IS SUCCESSFUL OR NOT
+
+
+
+
